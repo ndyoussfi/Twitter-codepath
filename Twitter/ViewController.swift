@@ -47,10 +47,7 @@ class ViewController: UIViewController {
     
     
     
-    //        TwitterClient.sharedInstance.loginWithBlock() {
-    //            // go to next screen
-    //
-    //        }
+   
 
 }
 
