@@ -33,8 +33,14 @@ class TweetCell: UITableViewCell {
             userHandle.text = "@\(tweet.user!.screenname!)" as String
             
             retweetCount.text = "\(tweet.retweetCount as! Int)"
+            retweetCount.text == "0" ? (retweetCount.hidden = true) : (retweetCount.hidden = false)
+            retweetCount.textColor = UIColor.grayColor()
             
             favoriteCount.text = "\(tweet.favCount as! Int)"
+            favoriteCount.text == "0" ? (favoriteCount.hidden = true) : (favoriteCount.hidden = false)
+            favoriteCount.textColor = UIColor.grayColor()
+            
+            
             print("This is the set fav count: \(favoriteCount.text)")
             
             if (tweet.user?.profileImageUrl != nil) {
@@ -54,11 +60,11 @@ class TweetCell: UITableViewCell {
     override func awakeFromNib() {
         super.awakeFromNib()
         // Initialization code
+        userName.preferredMaxLayoutWidth = userName.frame.size.width
         profileImage.layer.cornerRadius = 4.5
         profileImage.clipsToBounds = true
-        retweetButton.setImage(UIImage(named: "retweet-clicked.png"), forState: UIControlState.Selected)
+        userName.sizeToFit()
         
-        favoriteButton.setImage(UIImage(named: "like-clicked.png"), forState: UIControlState.Selected)
     }
     
     override func setSelected(selected: Bool, animated: Bool) {
@@ -97,5 +103,9 @@ class TweetCell: UITableViewCell {
         
         return "\(time)\(char)"
     }
+//    override func layoutSubviews() {
+//        super.layoutSubviews()
+//        userName.preferredMaxLayoutWidth = userName.frame.size.width
+//    }
 
 }
