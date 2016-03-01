@@ -247,34 +247,145 @@ public class GIFRefreshControl: UIControl {
     // MARK: Refresh methods
     ////////////////////////////////////////////////////////////////////////////
 
+//    public func beginRefreshing() {
+//        if let superview = superview as? UIScrollView where !refreshing {
+//            refreshing = true
+//
+//            //Saving inset
+//            contentInset = superview.contentInset
+//            let currentOffset = superview.contentOffset
+//
+//            //Setting new inset
+//            changingInset = true
+//            var inset = superview.contentInset
+//            inset.top = inset.top + expandedHeight
+//            superview.contentInset = inset
+//            changingInset = false
+//
+//            //Aaaaand scrolling
+//            superview.setContentOffset(currentOffset, animated: false)
+//            superview.setContentOffset(CGPoint(x: 0, y: -inset.top), animated: true)
+//            forbidsOffsetChanges = true
+//        }
+//    }
+//
+//    public func endRefreshing() {
+//        if let superview = superview as? UIScrollView where refreshing {
+//            forbidsOffsetChanges = false
+//            refreshing = false
+//
+//            UIView.animateWithDuration(animationDuration,
+//                delay: 0,
+//                usingSpringWithDamping: animationDamping,
+//                initialSpringVelocity: animationVelocity,
+//                options: UIViewAnimationOptions.CurveLinear,
+//                animations: { () -> Void in
+//
+//                    if let contentInset = self.contentInset {
+//                        superview.contentInset = contentInset
+//                        self.contentInset = nil
+//                    }
+//
+//                }) { (finished) -> Void in
+//
+//                    self.imageView.stopAnimating()
+//                    self.imageView.index = 0
+//
+//            }
+//        }
+//    }
+//
+//    ////////////////////////////////////////////////////////////////////////////
+//
+//
+//    // MARK: KVO
+//    ////////////////////////////////////////////////////////////////////////////
+//
+//    public override func observeValueForKeyPath(keyPath: String?, ofObject object: AnyObject?, change: [String : AnyObject]?, context: UnsafeMutablePointer<Void>) {
+//        if !changingInset {
+//            adaptShift()
+//        }
+//    }
+//
+//    ////////////////////////////////////////////////////////////////////////////
+//
+//
+//    // MARK: Shift
+//    ////////////////////////////////////////////////////////////////////////////
+//
+//    private var expandedHeight: CGFloat {
+//        let maxHeight = UIScreen.mainScreen().bounds.height / 5
+//        let height = imageView.animatedImage?.size.height
+//        return min(maxHeight, height ?? maxHeight)
+//    }
+//
+//    private func adaptShift() {
+//        if let superview = superview as? UIScrollView {
+//            //Updating frame
+//            let topInset = (contentInset ?? superview.contentInset).top
+//            let originY = superview.contentOffset.y + topInset
+//            let height = originY
+//
+//            frame = CGRect(origin: CGPoint(x: 0, y: originY),
+//                size: CGSize(width: superview.frame.width, height: -height))
+//
+//            //Detecting refresh gesture
+//            if superview.contentOffset.y + topInset <= -expandedHeight {
+//                forbidsInsetChanges = true
+//            }
+//            else {
+//                if !refreshing {
+//                    forbidsInsetChanges = false
+//                }
+//            }
+//
+//            //We cannot do this in the previous if/else because then some frames
+//            //might not be drawn
+//            if animateOnScroll && !refreshing && superview.contentOffset.y + topInset < 0 {
+//                let percentage = min(1, fabs(height) / expandedHeight)
+//                let count = CGFloat(imageView.animatedImage?.frameCount ?? 1) - 1
+//                let index = UInt(count * percentage)
+//                imageView.index = index
+//            }
+//
+//            if !superview.dragging && superview.decelerating && !forbidsOffsetChanges && forbidsInsetChanges {
+//                imageView.startAnimating()
+//                sendActionsForControlEvents(.ValueChanged)
+//
+//                beginRefreshing()
+//            }
+//        }
+//    }
     public func beginRefreshing() {
         if let superview = superview as? UIScrollView where !refreshing {
-//            self.refreshing = true
+            //            self.refreshing = true
             self.imageView.hidden = false
             //Saving inset
             contentInset = superview.contentInset
             let currentOffset = superview.contentOffset
-
+            
             //Setting new inset
             changingInset = true
             var inset = superview.contentInset
             inset.top = inset.top + expandedHeight
             superview.contentInset = inset
             changingInset = false
-
+            
             //Aaaaand scrolling
             superview.setContentOffset(currentOffset, animated: false)
             superview.setContentOffset(CGPoint(x: 0, y: -inset.top), animated: true)
             forbidsOffsetChanges = true
         }
     }
-
+    
+    
     public func endRefreshing() {
+        
         if let superview = superview as? UIScrollView where !refreshing {
             print("hello")
             forbidsOffsetChanges = false
             refreshing = false
-
+            
             UIView.animateWithDuration(animationDuration,
                 delay: 6,
                 usingSpringWithDamping: animationDamping,
@@ -292,8 +403,8 @@ public class GIFRefreshControl: UIControl {
                     self.changingInset = false
                     
                     //Aaaaand scrolling
-//                    superview.setContentOffset(currentOffset, animated: true)
-//                    superview.setContentOffset(CGPoint(x: 0, y: -inset.top), animated: true)
+                    //                    superview.setContentOffset(currentOffset, animated: true)
+                    //                    superview.setContentOffset(CGPoint(x: 0, y: -inset.top), animated: true)
                     self.forbidsOffsetChanges = true
                     
                 }) { (finished) -> Void in
@@ -301,45 +412,45 @@ public class GIFRefreshControl: UIControl {
                     self.imageView.stopAnimating()
                     
                     self.imageView.index = 0
-
+                    
             }
         }
     }
-
+    
     ////////////////////////////////////////////////////////////////////////////
-
-
+    
+    
     // MARK: KVO
     ////////////////////////////////////////////////////////////////////////////
-
+    
     public override func observeValueForKeyPath(keyPath: String?, ofObject object: AnyObject?, change: [String : AnyObject]?, context: UnsafeMutablePointer<Void>) {
         if !changingInset {
             adaptShift()
         }
     }
-
+    
     ////////////////////////////////////////////////////////////////////////////
-
-
+    
+    
     // MARK: Shift
     ////////////////////////////////////////////////////////////////////////////
-
+    
     private var expandedHeight: CGFloat {
         let maxHeight = UIScreen.mainScreen().bounds.height / 5
         let height = imageView.animatedImage?.size.height
         return min(maxHeight, height ?? maxHeight)
     }
-
+    
     private func adaptShift() {
         if let superview = superview as? UIScrollView {
             //Updating frame
             let topInset = (contentInset ?? superview.contentInset).top
             let originY = superview.contentOffset.y + topInset
             let height = originY
-
+            
             frame = CGRect(origin: CGPoint(x: 0, y: originY),
                 size: CGSize(width: superview.frame.width, height: -height))
-
+            
             //Detecting refresh gesture
             if superview.contentOffset.y + topInset <= -expandedHeight {
                 forbidsInsetChanges = true
@@ -349,7 +460,7 @@ public class GIFRefreshControl: UIControl {
                     forbidsInsetChanges = false
                 }
             }
-
+            
             //We cannot do this in the previous if/else because then some frames
             //might not be drawn
             if animateOnScroll && !refreshing && superview.contentOffset.y + topInset < 0 {
@@ -358,15 +469,16 @@ public class GIFRefreshControl: UIControl {
                 let index = UInt(count * percentage)
                 imageView.index = index
             }
-
+            
             if !superview.dragging && superview.decelerating && !forbidsOffsetChanges && forbidsInsetChanges {
                 imageView.startAnimating()
                 sendActionsForControlEvents(.ValueChanged)
-
+                
                 beginRefreshing()
             }
         }
     }
+
 
     ////////////////////////////////////////////////////////////////////////////
 }

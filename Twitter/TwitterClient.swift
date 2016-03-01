@@ -9,10 +9,12 @@
 
 import UIKit
 import BDBOAuth1Manager
+import AFNetworking
 
 let twitterConsumerKey = "VwJVhZcAI78miUi42rFm5AGrh"
 let twitterConsumerSecret = "IyyfD9cQfWBH6dEPCjTVjeYnl0RfAjgLtaXkFo1RUrcpgJ6yXr"
 let twitterBaseURL = NSURL(string: "https://api.twitter.com")
+
 
 class TwitterClient: BDBOAuth1SessionManager {
 
@@ -45,12 +47,39 @@ class TwitterClient: BDBOAuth1SessionManager {
     }
     
     
+    func retweetWithCompletion(id: Int, params: NSDictionary?, completion: (error: NSError?) -> () ){
+        POST("1.1/statuses/retweet/\(id).json", parameters: params, success: { (operation: NSURLSessionDataTask!, response: AnyObject?) -> Void in
+            completion(error: nil)
+            }, failure: { (operation: NSURLSessionDataTask?, error: NSError!) -> Void in
+                completion(error: error)
+            }
+        )
+    }
+    
+    
+    func unretweetWithCompletion(retweetedTweetID: Int, params: NSDictionary?, completion: (error: NSError?) -> ()) {
+        POST("/1.1/statuses/destroy/\(retweetedTweetID).json", parameters: params, success: { (operation: NSURLSessionDataTask, response: AnyObject?) -> Void in
+            completion(error: nil)
+            }, failure: { (operation: NSURLSessionDataTask?, err: NSError!) -> Void in
+                completion(error: err)
+        })
+    }
+    
+    
+    
+    func favoriteWithCompletion(id: Int, params: NSDictionary?, completion: (error: NSError?) -> () ){
+        POST("1.1/favorites/create.json?id=\(id)", parameters: params, success: { (operation: NSURLSessionDataTask!, response: AnyObject?) -> Void in
+            completion(error: nil)
+            }, failure: { (operation: NSURLSessionDataTask?, error: NSError!) -> Void in
+                completion(error: error)
+            }
+        )}
+    
+    
     func loginWithCompletion(completion: (user: User?, error: NSError?) -> ()) {
         
         loginWithCompletion = completion
-        
         TwitterClient.sharedInstance.requestSerializer.removeAccessToken()
-        
         TwitterClient.sharedInstance.fetchRequestTokenWithPath("oauth/request_token", method: "GET", callbackURL: NSURL(string: "cptwitterdemo://oauth"), scope: nil, success: { (requestToken: BDBOAuth1Credential!) -> Void in
             print("Got the request token")
             let authURL = NSURL(string: "https://api.twitter.com/oauth/authorize?oauth_token=\(requestToken.token)")
@@ -60,38 +89,11 @@ class TwitterClient: BDBOAuth1SessionManager {
                 self.loginWithCompletion?(user: nil, error: error)
         }
     }
-    func favoriteWithCompletion(params: NSDictionary?, completion: (tweet: Tweet?, error: NSError?) -> ()) {
-        
-        POST("1.1/favorites/create.json", parameters: params, success: { (operation: NSURLSessionDataTask, response: AnyObject?) -> Void in
-            
-            let tweet = Tweet.responseAsDictionary(response as! NSDictionary)
-            
-            completion(tweet: tweet, error: nil)
-            
-            }) { (operation: NSURLSessionDataTask?, error: NSError) -> Void in
-                print("ERROR: \(error)")
-                completion(tweet: nil, error: error)
-        }
-    }
-    
-    func retweetWithCompletion(params: NSDictionary?, completion: (tweet: Tweet?, error: NSError?) -> ()) {
-        
-        POST("1.1/statuses/retweet/\(params!["id"] as! Int).json", parameters: params, success: { (operation: NSURLSessionDataTask, response: AnyObject?) -> Void in
-            let tweet = Tweet.responseAsDictionary(response as! NSDictionary)
-            completion(tweet: tweet, error: nil)
-            
-            }) { (operation: NSURLSessionDataTask?, error: NSError) -> Void in
-                print("ERROR: \(error)")
-                completion(tweet: nil, error: error)
-        }
-    }
     
     func openURL(url: NSURL){
-        
         TwitterClient.sharedInstance.fetchAccessTokenWithPath("oauth/access_token", method: "POST", requestToken: BDBOAuth1Credential(queryString: url.query)!, success: { (accessToken: BDBOAuth1Credential!) -> Void in
             print("Got the access token!")
             TwitterClient.sharedInstance.requestSerializer.saveAccessToken(accessToken)
-            
             TwitterClient.sharedInstance.GET("1.1/account/verify_credentials.json", parameters: nil, success: { (operation: NSURLSessionDataTask!, response: AnyObject) -> Void in
                 let user = User(dictionary: response as! NSDictionary)
                 User.currentUser = user
@@ -104,6 +106,30 @@ class TwitterClient: BDBOAuth1SessionManager {
             print("Failed to receive access token")
             self.loginWithCompletion?(user: nil, error: error)
         }
+    }
+    
+    
+    func composeWithCompletion(escapedTweet: String, params: NSDictionary?, completion: (error: NSError?) -> () ){
+        POST("1.1/statuses/update.json?status=\(escapedTweet)", parameters: params, success: { (operation: NSURLSessionDataTask!, response: AnyObject?) -> Void in
+            print("tweeted: \(escapedTweet)")
+            completion(error: nil)
+            }, failure: { (operation: NSURLSessionDataTask?, error: NSError!) -> Void in
+                print("Couldn't compose")
+                completion(error: error)
+            }
+        )
+    }
+    
+    
+    func replyWithCompletion(escapedTweet: String, statusID: Int, params: NSDictionary?, completion: (error: NSError?) -> () ){
+        POST("1.1/statuses/update.json?in_reply_to_status_id=\(statusID)&status=\(escapedTweet)", parameters: params, success: { (operation: NSURLSessionDataTask!, response: AnyObject?) -> Void in
+            print("tweeted: \(escapedTweet)")
+            completion(error: nil)
+            }, failure: { (operation: NSURLSessionDataTask?, error: NSError!) -> Void in
+                print("Couldn't reply")
+                completion(error: error)
+            }
+        )
     }
     
 }

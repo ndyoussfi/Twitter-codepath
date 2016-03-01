@@ -14,7 +14,7 @@
             buildForArchiving = "YES">
             <BuildableReference
                BuildableIdentifier = 'primary'
-               BlueprintIdentifier = 'F3D83C9998BE89C25DDAE011'
+               BlueprintIdentifier = '430D35AFE01D29677615F78F'
                BlueprintName = 'GIFRefreshControl'
                ReferencedContainer = 'container:Pods.xcodeproj'
                BuildableName = 'GIFRefreshControl.framework'>

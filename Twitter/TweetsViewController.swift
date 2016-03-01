@@ -10,65 +10,117 @@
 import UIKit
 import GIFRefreshControl
 
+class TweetsViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate {
 
-class TweetsViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
-
+    
     var tweets: [Tweet]?
-    var refreshControl = GIFRefreshControl()
-    var loadingMoreView:InfiniteScrollActivityView?
+    var tweet: Tweet?
     var isMoreDataLoading = false
-    var loadMoreOffset = 20
+    var loadingMoreView:InfiniteScrollActivityView?
+    var refreshControl = UIRefreshControl()
+//    var refreshControl = GIFRefreshControl()
+    var loadMoreOffset = 50
     
     @IBOutlet weak var tableView: UITableView!
     
-    
     override func viewDidLoad() {
         super.viewDidLoad()
+
+        tableView.dataSource = self
+        tableView.delegate = self
+        tableView.rowHeight = UITableViewAutomaticDimension
+        tableView.estimatedRowHeight = 150
+                
+        /*
+        /*one more*/
         navigationController?.navigationBar.barTintColor = UIColor.whiteColor()
         navigationController?.navigationBar.titleTextAttributes = [NSForegroundColorAttributeName: UIColor.whiteColor()]
         navigationController?.navigationBar.tintColor = UIColor.whiteColor()
         
-        tableView.dataSource = self
-        tableView.delegate = self
+        
+        */
+        
+        /*START*/
+        self.refreshControl = UIRefreshControl()
+        refreshControl.addTarget(self, action: "refreshControlAction", forControlEvents: UIControlEvents.ValueChanged)
+        tableView.insertSubview(refreshControl, atIndex: 0)
+        self.tableView.addSubview(self.refreshControl)
+        self.refreshControl.backgroundColor = UIColor.grayColor()
+        self.refreshControl.tintColor = UIColor.whiteColor()
+        /*END*/
         
         
-        tableView.rowHeight = UITableViewAutomaticDimension
-        tableView.estimatedRowHeight = 120
+        let frame = CGRectMake(0, tableView.contentSize.height, tableView.bounds.size.width, InfiniteScrollActivityView.defaultHeight)
+        loadingMoreView = InfiniteScrollActivityView(frame: frame)
+        loadingMoreView!.hidden = true
+        tableView.addSubview(loadingMoreView!)
+        
+        var insets = tableView.contentInset;
+        insets.bottom += InfiniteScrollActivityView.defaultHeight;
+        tableView.contentInset = insets
         
         
-        // Do any additional setup after loading the view.
+        tableView.contentInset = UIEdgeInsetsMake(0, 0, 0, 0)
         
         TwitterClient.sharedInstance.homeTimelineWithParams(nil) { (tweets, error) -> () in
+            if (tweets != nil) {
             self.tweets = tweets
             self.tableView.reloadData()
-            
+            }
         }
+        //======================HERE========================
+        let image_view = UIImageView(frame: CGRect(x: 0, y:0, width:40, height: 40))
+        image_view.contentMode = .ScaleAspectFit
+        let image = UIImage(named: "Icon-Small-50")
+        image_view.image = image
+        self.navigationItem.titleView = image_view
+        //==================================================
+        /*one more*/
         
         
-        let URL = NSBundle.mainBundle().URLForResource("giphy", withExtension: "gif")
-        let data = NSData(contentsOfURL: URL!)
+//        let URL = NSBundle.mainBundle().URLForResource("giphy", withExtension: "gif")
+//        let data = NSData(contentsOfURL: URL!)
+//        
+//        self.refreshControl = GIFRefreshControl()
+//        refreshControl.animatedImage = GIFAnimatedImage(data: data!)
+//        refreshControl.contentMode = .ScaleAspectFill
+//        refreshControl.addTarget(self, action: "refreshControlAction", forControlEvents: .ValueChanged)
+//        tableView.addSubview(refreshControl)
         
-        self.refreshControl = GIFRefreshControl()
-        refreshControl.animatedImage = GIFAnimatedImage(data: data!)
-        refreshControl.contentMode = .ScaleAspectFill
-        refreshControl.addTarget(self, action: "refreshAction", forControlEvents: .ValueChanged)
-        tableView.addSubview(refreshControl)
+
         
-        setupInfiniteScrollView()
         
-        tableView.infiniteScrollIndicatorStyle = .Gray
+        /*INFINITE SCROLL INDICATOR*/
+        /*
+        
         tableView.addInfiniteScrollWithHandler { (scrollView) -> Void in
-            let tableView = scrollView as! UITableView
-            
-            tableView.reloadData()
-            
+        let tableView = scrollView as! UITableView
+        
+        tableView.reloadData()
+        
         }
         tableView.infiniteScrollIndicatorView = CustomInfiniteIndicator(frame: CGRectMake(0, 0, 24, 24))
 
         
+        */
         
     }
-
+    // /*one more*/
+    override func viewWillAppear(animated: Bool) {
+        let nav = self.navigationController?.navigationBar
+        nav?.barTintColor = UIColor.whiteColor()
+        nav?.tintColor = UIColor.grayColor()
+        
+        let imageView = UIImageView(frame: CGRect(x: 0, y: 0, width: 40, height: 40))
+        imageView.contentMode = .ScaleAspectFit
+        
+        let image = UIImage(named: "compose-icon")
+        imageView.image = image
+        imageView.tintColor = UIColor.blackColor()
+        
+       // navigationItem.titleView = imageView
+    }
+    
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
@@ -76,16 +128,20 @@ class TweetsViewController: UIViewController, UITableViewDataSource, UITableView
     
     
     @IBAction func onLogout(sender: AnyObject) {
-        User.currentUser!.logout()
+        if User.currentUser != nil{
+            User.currentUser!.logout()
+            self.dismissViewControllerAnimated(true, completion: nil)
+        } else{
+            print("current user is nil")
+        }
+        
+      //  User.currentUser!.logout()
+        
+        
         self.dismissViewControllerAnimated(true, completion: nil)
         
     }
-    func refreshAction(){
-            self.tableView.reloadData()
-            print("hi")
-            self.refreshControl.endRefreshing()
-        
-    }
+    
     
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if let tweets = self.tweets {
@@ -95,106 +151,69 @@ class TweetsViewController: UIViewController, UITableViewDataSource, UITableView
     }
     
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCellWithIdentifier("TweetCell", forIndexPath: indexPath) as! TweetCell
-        
-
-        if (tweets != nil) {
-            cell.tweet = tweets![indexPath.row]
-        }
-        
-        cell.selectionStyle = UITableViewCellSelectionStyle.None
-
+        let cell = tableView.dequeueReusableCellWithIdentifier("TweetsTableViewCell", forIndexPath: indexPath) as! TweetsTableViewCell
+        cell.tweet = tweets![indexPath.row]
+        cell.createdTime.text = tweets![indexPath.row].Time!
         return cell
     }
     
-
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
-    }
-    */
-    @IBAction func onRetweet(sender: AnyObject) {
-        
-        var subview: CGPoint = sender.convertPoint(CGPointZero, toView: self.tableView)
-        var indexPath: NSIndexPath = self.tableView.indexPathForRowAtPoint(subview)!
-        let cell =  self.tableView.cellForRowAtIndexPath(indexPath)! as! TweetCell
-        let tweet = tweets![indexPath.row]
-        let tweetID = tweet.id
-        
-        TwitterClient.sharedInstance.retweetWithCompletion(["id": tweetID!]) { (tweet, error) -> () in
-            
-            if (tweet != nil) {
-
-                self.tweets![indexPath.row].retweetCount = self.tweets![indexPath.row].retweetCount as! Int + 1
-
-                var indexPath = NSIndexPath(forRow: indexPath.row, inSection: 0)
-                self.tableView.reloadRowsAtIndexPaths([indexPath], withRowAnimation: UITableViewRowAnimation.Top)
-                
-            }
-        
+    
+    @available(iOS, deprecated=8.0)
+    /*one more*/
+    func refreshControlAction(){
+        TwitterClient.sharedInstance.homeTimelineWithParams(nil) { (tweets, error) -> () in
+            self.tweets = tweets
+            self.tableView.reloadData()
+           self.refreshControl.endRefreshing()
         }
+    }
+    func delay(delay: Double, closure: () -> () ) {
+        dispatch_after(
+            dispatch_time(
+                DISPATCH_TIME_NOW,
+                Int64(delay * Double(NSEC_PER_SEC))
+            ),
+            dispatch_get_main_queue(), closure
+        )
     }
     
-    @IBAction func onFavorite(sender: AnyObject) {
-        
-        var button : UIButton = sender as! UIButton
-        var subviewPostion: CGPoint = sender.convertPoint(CGPointZero, toView: self.tableView)
-        var indexPath: NSIndexPath = self.tableView.indexPathForRowAtPoint(subviewPostion)!
-        let cell =  self.tableView.cellForRowAtIndexPath(indexPath)! as! TweetCell
-        let tweet = tweets![indexPath.row]
-        let tweetID = tweet.id
-        
-        
-        TwitterClient.sharedInstance.favoriteWithCompletion(["id": tweetID!]) { (tweet, error) -> () in
+    func loadMoreData() {
+        TwitterClient.sharedInstance.homeTimelineWithParams(nil) { (tweets, error) -> () in
             
-            if (tweet != nil) {
-               
-                self.tweets![indexPath.row].favCount = self.tweets![indexPath.row].favCount as! Int + 1
-                var indexPath = NSIndexPath(forRow: indexPath.row, inSection: 0)
-                self.tableView.reloadRowsAtIndexPaths([indexPath], withRowAnimation: UITableViewRowAnimation.Top)
-                
+            if error != nil {
+                self.delay(1.0, closure: {
+                    self.loadingMoreView?.stopAnimating()
+                    //TODO: show network error
+                })
+            } else {
+                self.delay(5.0, closure: { Void in
+                    self.loadMoreOffset += 20
+                    self.tweets!.appendContentsOf(tweets!)
+                    self.tableView.reloadData()
+                    self.loadingMoreView?.stopAnimating()
+                    self.isMoreDataLoading = false
+                })
             }
-        }
-    }
-   
-    class InfiniteScrollActivityView: UIView {
-        var activityIndicatorView: UIActivityIndicatorView = UIActivityIndicatorView()
-        static let defaultHeight:CGFloat = 60.0
-        
-        required init?(coder aDecoder: NSCoder) {
-            super.init(coder: aDecoder)
-            setupActivityIndicator()
-        }
-        
-        override init(frame aRect: CGRect) {
-            super.init(frame: aRect)
-            setupActivityIndicator()
-        }
-        
-        override func layoutSubviews() {
-            super.layoutSubviews()
-            activityIndicatorView.center = CGPointMake(self.bounds.size.width/2, self.bounds.size.height/2)
-        }
-        
-        func setupActivityIndicator() {
-            activityIndicatorView.activityIndicatorViewStyle = .Gray
-            activityIndicatorView.hidesWhenStopped = true
             
-            self.addSubview(activityIndicatorView)
         }
         
-        func stopAnimating() {
-            self.activityIndicatorView.stopAnimating()
-            self.hidden = true
-        }
-        
-        func startAnimating() {
-            self.hidden = true
-            self.activityIndicatorView.startAnimating()
+    }
+    
+    
+    func scrollViewDidScroll(scrollView: UIScrollView) {
+        if (!isMoreDataLoading) {
+            // Calculate the position of one screen length before the bottom of the results
+            let scrollViewContentHeight = tableView.contentSize.height
+            let scrollOffsetThreshold = scrollViewContentHeight - tableView.bounds.size.height
+            if(scrollView.contentOffset.y > scrollOffsetThreshold && tableView.dragging) {
+                isMoreDataLoading = true
+                
+                
+                let frame = CGRectMake(0, tableView.contentSize.height, tableView.bounds.size.width, InfiniteScrollActivityView.defaultHeight)
+                loadingMoreView?.frame = frame
+                loadingMoreView!.startAnimating()
+                loadMoreData()
+            }
         }
     }
     
@@ -212,50 +231,45 @@ class TweetsViewController: UIViewController, UITableViewDataSource, UITableView
         tableView.contentInset = insets
     }
     
-    func delay(delay: Double, closure: () -> () ) {
-        dispatch_after(
-            dispatch_time(
-                DISPATCH_TIME_NOW,
-                Int64(delay * Double(NSEC_PER_SEC))
-            ),
-            dispatch_get_main_queue(), closure
-        )
-    }
-    func loadMoreData(){
-        TwitterClient.sharedInstance.homeTimelineWithParams(nil) { (tweets, error) -> () in
-            
-            if error != nil {
-                self.delay(2.0, closure: {
-                    self.loadingMoreView?.stopAnimating()
-                    //TODO: show network error
-                })
-            } else {
-                self.delay(0.5, closure: { Void in
-                    self.loadMoreOffset += 20
-                    self.tweets!.appendContentsOf(tweets!)
-                    self.tableView.reloadData()
-                    self.loadingMoreView?.stopAnimating()
-                    self.isMoreDataLoading = false
-                })
-            }
+    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+        
+        if (segue.identifier == "Details") {
+            let cell = sender as! UITableViewCell
+            let indexPath = tableView.indexPathForCell(cell)
+            let tweet = tweets![indexPath!.row]
+            let tweetsDetailsViewController = segue.destinationViewController as! TweetsDetailsViewController
+            tweetsDetailsViewController.tweet = tweet
             
         }
-    }
-    func scrollViewDidScroll(scrollView: UIScrollView) {
-        // Handle scroll behavior here
-        if (!isMoreDataLoading) {
-            let scrollViewContentHeight = tableView.contentSize.height
-            let scrollOffsetThreshold = scrollViewContentHeight - tableView.bounds.size.height
+        else if (segue.identifier) == "Compose" {
+            let user = User.currentUser
+            let composeTweetViewController = segue.destinationViewController as! ComposeViewController
+            composeTweetViewController.user = user
             
-            if (scrollView.contentOffset.y > scrollOffsetThreshold && tableView.dragging) {
-                isMoreDataLoading = true
-                let frame = CGRectMake(0, tableView.contentSize.height, tableView.bounds.size.width, InfiniteScrollActivityView.defaultHeight)
-                loadingMoreView?.frame = frame
-                loadingMoreView!.startAnimating()
-                
-                //load more data
-                loadMoreData()
-            }
+            
+        } else if (segue.identifier) == "ReplyFromCellSegue" {
+            let button = sender as! UIButton
+            let view = button.superview!
+            let cell = view.superview as! TweetsTableViewCell
+            let indexPath = tableView.indexPathForCell(cell)
+            let tweet = tweets![indexPath!.row]
+            let user = User.currentUser
+            let ReplyTweetViewController = segue.destinationViewController as! ReplyViewController
+            ReplyTweetViewController.tweet = tweet
+            ReplyTweetViewController.user = user
+            
+            
+        } else if (segue.identifier) == "FromCellToUserProfileSegue"{
+            let button = sender as! UIButton
+            let view = button.superview!
+            let cell = view.superview as! TweetsTableViewCell
+            let indexPath = tableView.indexPathForCell(cell)
+            let tweet = tweets![indexPath!.row]
+            let UserProfilePageViewController = segue.destinationViewController as! UserProfileViewController
+            UserProfilePageViewController.tweet = tweet
         }
     }
-    }
+    
+    
+    
+}
